@@ -180,7 +180,7 @@ class MainWindow(QMainWindow):
 
     def _header(self):
         frame = QFrame()
-        frame.setStyleSheet(f"background-color: {BG}; border-bottom: 3px solid {MAZE};")
+        frame.setStyleSheet(f"background-color: {BG};")
         layout = QVBoxLayout(frame)
         layout.setContentsMargins(0, 18, 0, 14)
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
