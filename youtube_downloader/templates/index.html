@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ᗧ···  PAC-MAN DOWNLOADER</title>
+  <style>
+    :root {
+      --bg:    #000000;
+      --maze:  #2121DE;
+      --yl:    #FFD700;
+      --red:   #FF0000;
+      --pink:  #FFB8DE;
+      --cyan:  #00FFDE;
+      --org:   #FFB852;
+      --wh:    #FFFFFF;
+      --dot:   #DEDEBE;
+      --panel: #0a0a1a;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--wh);
+      font-family: 'Courier New', Courier, monospace;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 0 16px 48px;
+    }
+
+    .app { width: 100%; max-width: 740px; }
+
+    /* ── header ── */
+    .hdr { text-align: center; padding: 28px 0 18px; }
+
+    .hdr-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      margin-bottom: 8px;
+    }
+
+    .ghost { font-size: 30px; }
+    .ghost-l { color: var(--cyan); animation: pulse 1.8s ease-in-out infinite; }
+    .ghost-r { color: var(--pink); animation: pulse 1.8s ease-in-out infinite 0.9s; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.4; }
+    }
+
+    .hdr-title {
+      font-size: 26px;
+      font-weight: bold;
+      color: var(--yl);
+      letter-spacing: 4px;
+    }
+
+    .hdr-sub   { color: var(--dot); font-size: 12px; margin-bottom: 7px; }
+    .ff-ok     { color: var(--cyan);  font-size: 11px; }
+    .ff-warn   { color: var(--org);   font-size: 11px; }
+
+    /* ── section divider ── */
+    .sec {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .sec-lbl {
+      color: var(--maze);
+      font-size: 11px;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+    .sec-line { flex: 1; height: 1px; background: var(--maze); }
+
+    /* ── maze panel ── */
+    .panel {
+      background: var(--panel);
+      border: 3px solid var(--maze);
+      border-radius: 4px;
+      padding: 10px 14px;
+      margin-bottom: 14px;
+    }
+
+    /* ── inputs ── */
+    input[type=text] {
+      width: 100%;
+      background: transparent;
+      border: none;
+      outline: none;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 14px;
+      color: var(--yl);
+      padding: 4px 0;
+    }
+    input[type=text]::placeholder { color: #555; }
+    #dirInput { color: var(--dot); font-size: 13px; }
+
+    /* ── buttons ── */
+    .btn-row { display: flex; gap: 14px; margin: 2px 0 14px; }
+
+    .btn {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 15px;
+      font-weight: bold;
+      padding: 11px 24px;
+      border: 3px solid;
+      border-radius: 2px;
+      cursor: pointer;
+      transition: background .1s, border-color .1s;
+    }
+
+    #startBtn {
+      background: var(--yl);
+      color: var(--bg);
+      border-color: var(--yl);
+    }
+    #startBtn:hover:not(:disabled) { background: #ffe84d; border-color: var(--wh); }
+    #startBtn:disabled {
+      background: #444; color: #777; border-color: #555; cursor: not-allowed;
+    }
+
+    #cancelBtn {
+      background: var(--bg);
+      color: var(--red);
+      border-color: var(--red);
+    }
+    #cancelBtn:hover:not(:disabled) { background: #1a0000; border-color: #ff5555; }
+    #cancelBtn:disabled { color: #444; border-color: #333; cursor: not-allowed; }
+
+    /* ── progress ── */
+    .prog-wrap { margin-bottom: 14px; }
+    #statusLabel { color: var(--yl); font-size: 13px; margin-bottom: 8px; }
+
+    #pacCanvas {
+      display: block;
+      width: 100%;
+      height: 32px;
+      background: var(--bg);
+    }
+
+    #pctLabel {
+      color: var(--dot);
+      font-size: 12px;
+      text-align: right;
+      margin-top: 3px;
+    }
+
+    /* ── log ── */
+    #logView {
+      background: var(--panel);
+      border: 3px solid var(--maze);
+      border-radius: 4px;
+      padding: 10px 14px;
+      height: 260px;
+      overflow-y: auto;
+      font-size: 12px;
+      line-height: 1.75;
+    }
+    #logView::-webkit-scrollbar       { width: 10px; background: var(--bg); }
+    #logView::-webkit-scrollbar-thumb { background: var(--maze); border-radius: 2px; }
+
+    .ll    { white-space: pre-wrap; word-break: break-all; }
+    .li    { color: var(--dot); }
+    .ls    { color: var(--cyan); }
+    .le    { color: var(--red); }
+    .lt    { color: var(--yl); }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ── header ── -->
+  <div class="hdr">
+    <div class="hdr-row">
+      <span class="ghost ghost-l">ᗣ</span>
+      <span class="hdr-title">PAC-MAN  DOWNLOADER</span>
+      <span class="ghost ghost-r">ᗣ</span>
+    </div>
+    <div class="hdr-sub">ᗧ· · · INSERT PLAYLIST URL · · ·ᗤ</div>
+    {% if ffmpeg_available %}
+    <div class="ff-ok">▶  FFMPEG DETECTED — MAX QUALITY MODE</div>
+    {% else %}
+    <div class="ff-warn">⚠  FFMPEG NOT FOUND — SINGLE STREAM MODE  |  brew install ffmpeg</div>
+    {% endif %}
+  </div>
+
+  <!-- ── URL ── -->
+  <div class="sec"><span class="sec-lbl">── STAGE  ·  PLAYLIST URL</span><div class="sec-line"></div></div>
+  <div class="panel">
+    <input type="text" id="urlInput" placeholder="https://www.youtube.com/playlist?list=...">
+  </div>
+
+  <!-- ── save dir ── -->
+  <div class="sec"><span class="sec-lbl">── SAVE TO</span><div class="sec-line"></div></div>
+  <div class="panel">
+    <input type="text" id="dirInput" value="{{ default_dir }}">
+  </div>
+
+  <!-- ── buttons ── -->
+  <div class="btn-row">
+    <button class="btn" id="startBtn"  onclick="startDownload()">ᗧ  START DOWNLOAD</button>
+    <button class="btn" id="cancelBtn" onclick="cancelDownload()" disabled>ᗣ  CANCEL</button>
+  </div>
+
+  <!-- ── progress ── -->
+  <div class="sec"><span class="sec-lbl">── SCORE</span><div class="sec-line"></div></div>
+  <div class="prog-wrap">
+    <div id="statusLabel">READY!</div>
+    <canvas id="pacCanvas"></canvas>
+    <div id="pctLabel">0%</div>
+  </div>
+
+  <!-- ── log ── -->
+  <div class="sec"><span class="sec-lbl">── ARCADE LOG</span><div class="sec-line"></div></div>
+  <div id="logView"></div>
+
+</div>
+<script>
+// ── Pac-Man canvas ────────────────────────────────────────────────────────────
+const canvas = document.getElementById('pacCanvas');
+const ctx    = canvas.getContext('2d');
+
+let progress   = 0;
+let mouthOpen  = true;
+let animId     = null;
+let animActive = false;
+let lastBlink  = 0;
+
+function resizeCanvas() {
+  canvas.width  = canvas.offsetWidth;
+  canvas.height = 32;
+  drawPacMan();
+}
+
+function drawPacMan() {
+  const w = canvas.width, h = 32;
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, w, h);
+
+  const dotR   = 3,  dotY   = h / 2;
+  const pad    = 20, trackW = w - pad * 2;
+  const pacSz  = 22, nDots  = 28;
+  const spc    = trackW / (nDots + 1);
+  const eatX   = pad + trackW * progress / 100;
+
+  // dots
+  ctx.fillStyle = '#DEDEBE';
+  for (let i = 1; i <= nDots; i++) {
+    const dx = pad + spc * i;
+    if (dx < eatX - pacSz / 2) continue;
+    ctx.beginPath();
+    ctx.arc(dx, dotY, i % 7 === 0 ? 5 : dotR, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Pac-Man
+  const px = pad + trackW * progress / 100;
+  const r  = pacSz / 2;
+  ctx.fillStyle = '#FFD700';
+  ctx.beginPath();
+  if (mouthOpen) {
+    ctx.moveTo(px, dotY);
+    ctx.arc(px, dotY, r, 30 * Math.PI / 180, 330 * Math.PI / 180);
+  } else {
+    ctx.arc(px, dotY, r, 0, Math.PI * 2);
+  }
+  ctx.closePath();
+  ctx.fill();
+}
+
+function animLoop(ts) {
+  if (ts - lastBlink > 200) {
+    mouthOpen  = !mouthOpen;
+    lastBlink  = ts;
+    drawPacMan();
+  }
+  if (animActive) animId = requestAnimationFrame(animLoop);
+}
+
+function startAnim() {
+  if (animActive) return;
+  animActive = true;
+  animId     = requestAnimationFrame(animLoop);
+}
+
+function stopAnim() {
+  animActive = false;
+  if (animId) { cancelAnimationFrame(animId); animId = null; }
+  mouthOpen = true;
+  drawPacMan();
+}
+
+window.addEventListener('resize', resizeCanvas);
+window.addEventListener('load',   resizeCanvas);
+
+// ── UI helpers ────────────────────────────────────────────────────────────────
+function setProgress(v) {
+  progress = Math.max(0, Math.min(100, v));
+  document.getElementById('pctLabel').textContent = v + '%';
+  drawPacMan();
+}
+
+function setStatus(s) {
+  document.getElementById('statusLabel').textContent = s;
+}
+
+function appendLog(msg, tag) {
+  const map  = { info: 'li', success: 'ls', error: 'le', title: 'lt' };
+  const el   = document.getElementById('logView');
+  const line = document.createElement('div');
+  line.className = 'll ' + (map[tag] || 'li');
+  line.textContent = msg;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+
+function setUI(downloading) {
+  document.getElementById('startBtn').disabled  =  downloading;
+  document.getElementById('cancelBtn').disabled = !downloading;
+  if (downloading) startAnim(); else stopAnim();
+}
+
+// ── SSE ───────────────────────────────────────────────────────────────────────
+let es = null;
+let startPending = false;  // guard against state-event UI flicker on start
+
+function connectSSE() {
+  if (es) { es.close(); es = null; }
+  es = new EventSource('/stream');
+  es.onmessage = e => handleEvent(JSON.parse(e.data));
+  es.onerror   = () => { /* EventSource auto-reconnects */ };
+}
+
+function handleEvent(ev) {
+  switch (ev.type) {
+    case 'state': {
+      const s = ev.data;
+      setProgress(s.progress);
+      setStatus(s.status);
+      document.getElementById('dirInput').value = s.output_dir;
+      document.getElementById('logView').innerHTML = '';
+      s.logs.forEach(l => appendLog(l.msg, l.tag));
+      if (!startPending) setUI(s.is_downloading);
+      break;
+    }
+    case 'log':      appendLog(ev.data.msg, ev.data.tag); break;
+    case 'status':   setStatus(ev.data);                  break;
+    case 'progress': setProgress(ev.data);                break;
+    case 'done':
+      setUI(false);
+      if (es) { es.close(); es = null; }
+      break;
+  }
+}
+
+// ── API ───────────────────────────────────────────────────────────────────────
+async function startDownload() {
+  const url = document.getElementById('urlInput').value.trim();
+  const dir = document.getElementById('dirInput').value.trim();
+  if (!url) { alert('재생목록 URL을 입력해주세요.'); return; }
+
+  document.getElementById('logView').innerHTML = '';
+  setProgress(0);
+  setStatus('READY!');
+
+  startPending = true;
+  connectSSE();
+  setUI(true);
+
+  let res;
+  try {
+    res = await fetch('/start', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ url, output_dir: dir }),
+    });
+  } catch (err) {
+    alert('서버에 연결할 수 없습니다.');
+    setUI(false);
+    if (es) { es.close(); es = null; }
+    return;
+  } finally {
+    startPending = false;
+  }
+
+  if (!res.ok) {
+    const d = await res.json();
+    alert(d.error || '오류가 발생했습니다.');
+    setUI(false);
+    if (es) { es.close(); es = null; }
+  }
+}
+
+async function cancelDownload() {
+  await fetch('/cancel', { method: 'POST' });
+}
+
+// Enter key shortcut
+document.getElementById('urlInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !document.getElementById('startBtn').disabled) {
+    startDownload();
+  }
+});
+
+// Connect on load so the page restores state if a download is already running
+connectSSE();
+</script>
+</body>
+</html>
