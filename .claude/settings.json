@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /Users/kwan/vibecoding/scripts/update_claude_md.py"
+          }
+        ]
+      }
+    ]
+  }
+}
