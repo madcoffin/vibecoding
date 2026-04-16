@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 /Users/kwan/vibecoding/scripts/update_claude_md.py"
+            "command": "python3 /Users/coffin/vibecoding/scripts/update_claude_md.py"
           }
         ]
       }
