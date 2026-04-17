@@ -1,0 +1,72 @@
+<!-- Created: 2026-04-17 16:34:31 -->
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TodoMate</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="container">
+
+      <!-- 헤더 영역 -->
+      <header class="app-header">
+        <h1 class="app-title">TodoMate</h1>
+        <p class="progress-text" aria-live="polite">0 / 0 완료 · 0%</p>
+        <div class="progress-bar-track" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+          <div class="progress-bar-fill" style="width: 0%"></div>
+        </div>
+      </header>
+
+      <!-- 입력 영역 -->
+      <section class="input-section">
+        <input
+          type="text"
+          id="todo-input"
+          class="todo-input"
+          placeholder="할 일을 입력하세요"
+          maxlength="100"
+          aria-label="할 일 입력"
+        />
+        <select id="category-select" class="category-select" aria-label="카테고리 선택">
+          <option value="personal">개인</option>
+          <option value="work">업무</option>
+          <option value="study">공부</option>
+        </select>
+        <button id="add-btn" class="add-btn" aria-label="할 일 추가">추가</button>
+      </section>
+
+      <!-- 필터 탭 영역 -->
+      <nav class="filter-tabs" aria-label="카테고리 필터">
+        <button class="tab active" data-filter="all">
+          전체 <span class="tab-count" aria-label="전체 개수">0</span>
+        </button>
+        <button class="tab" data-filter="work">
+          업무 <span class="tab-count" aria-label="업무 개수">0</span>
+        </button>
+        <button class="tab" data-filter="personal">
+          개인 <span class="tab-count" aria-label="개인 개수">0</span>
+        </button>
+        <button class="tab" data-filter="study">
+          공부 <span class="tab-count" aria-label="공부 개수">0</span>
+        </button>
+      </nav>
+
+      <!-- 할 일 목록 영역 -->
+      <ul id="todo-list" class="todo-list" aria-label="할 일 목록"></ul>
+
+      <!-- 푸터 영역 -->
+      <footer class="app-footer" id="app-footer">
+        <button id="clear-completed-btn" class="footer-btn danger" hidden aria-label="완료된 항목 모두 삭제">
+          완료된 항목 삭제
+        </button>
+        <button id="reset-btn" class="footer-btn reset" aria-label="앱 초기화">
+          앱 초기화
+        </button>
+      </footer>
+
+    </div>
+    <script src="app.js"></script>
+  </body>
+</html>

@@ -1,3 +1,4 @@
+# Created: 2026-04-17 16:41:03
 #!/usr/bin/env python3
 """
 Auto-update the AUTO-GENERATED section of each project's CLAUDE.md
@@ -6,6 +7,9 @@ whenever a Python source file is edited.
 Usage (called by Claude Code PostToolUse hook):
     python3 update_claude_md.py          # reads CLAUDE_TOOL_INPUT env var
     python3 update_claude_md.py <path>   # explicit file path (for testing)
+
+Projects are auto-discovered: any directory under vibecoding/ that contains
+both a CLAUDE.md and at least one .py file is tracked automatically.
 """
 
 import ast
@@ -15,22 +19,31 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-# ── Project registry ──────────────────────────────────────────────────────────
-BASE_DIR = Path(__file__).parent.parent  # /Users/kwan/vibecoding
-
-PROJECTS: dict[Path, list[str]] = {
-    BASE_DIR / "file_renamer":      ["file_renamer.py"],
-    BASE_DIR / "youtube_downloader": ["youtube_downloader.py"],
-}
+BASE_DIR = Path(__file__).parent.parent  # /Users/coffin/vibecoding
+SKIP_DIRS = {"scripts", ".git", ".claude", "__pycache__"}
 
 START_MARKER = "<!-- AUTO-GENERATED START -->"
 END_MARKER   = "<!-- AUTO-GENERATED END -->"
 
 
+# ── Project discovery ─────────────────────────────────────────────────────────
+
+def find_projects() -> dict[Path, list[str]]:
+    """Return {proj_dir: [py_filenames]} for every dir with CLAUDE.md + .py files."""
+    projects: dict[Path, list[str]] = {}
+    for claude_md in sorted(BASE_DIR.rglob("CLAUDE.md")):
+        proj_dir = claude_md.parent
+        if any(part in SKIP_DIRS for part in proj_dir.parts):
+            continue
+        py_files = sorted(p.name for p in proj_dir.glob("*.py"))
+        if py_files:
+            projects[proj_dir] = py_files
+    return projects
+
+
 # ── AST analysis ──────────────────────────────────────────────────────────────
 
 def _unparse(node) -> str:
-    """ast.unparse with fallback for older Python versions."""
     if hasattr(ast, "unparse"):
         return ast.unparse(node)
     return "..."
@@ -49,7 +62,6 @@ def parse_python_file(filepath: Path) -> dict | None:
     functions: list[dict] = []
 
     for node in tree.body:
-        # imports
         if isinstance(node, ast.Import):
             for alias in node.names:
                 imports.append(alias.name)
@@ -61,7 +73,6 @@ def parse_python_file(filepath: Path) -> dict | None:
             suffix = "..." if len(names) > 4 else ""
             imports.append(f"{mod} ({preview}{suffix})")
 
-        # UPPER_CASE constants
         elif isinstance(node, ast.Assign):
             for target in node.targets:
                 if isinstance(target, ast.Name) and target.id.isupper():
@@ -70,7 +81,6 @@ def parse_python_file(filepath: Path) -> dict | None:
                         val = val[:57] + "..."
                     constants.append((target.id, val))
 
-        # classes
         elif isinstance(node, ast.ClassDef):
             bases = [_unparse(b) for b in node.bases]
             methods = [
@@ -81,7 +91,6 @@ def parse_python_file(filepath: Path) -> dict | None:
             ]
             classes.append({"name": node.name, "bases": bases, "methods": methods})
 
-        # top-level functions
         elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             args = [a.arg for a in node.args.args]
             functions.append({"name": node.name, "args": args})
@@ -96,12 +105,12 @@ def parse_python_file(filepath: Path) -> dict | None:
 
 # ── Section generation ────────────────────────────────────────────────────────
 
-def generate_auto_section(proj_dir: Path) -> str:
+def generate_auto_section(proj_dir: Path, py_files: list[str]) -> str:
     lines: list[str] = []
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     lines.append(f"_Last auto-updated: {now}_\n")
 
-    for fname in PROJECTS[proj_dir]:
+    for fname in py_files:
         fpath = proj_dir / fname
         if not fpath.exists():
             continue
@@ -146,14 +155,13 @@ def generate_auto_section(proj_dir: Path) -> str:
 
 # ── CLAUDE.md update ──────────────────────────────────────────────────────────
 
-def update_claude_md(proj_dir: Path) -> None:
+def update_claude_md(proj_dir: Path, py_files: list[str]) -> None:
     claude_md = proj_dir / "CLAUDE.md"
     if not claude_md.exists():
-        print(f"[update_claude_md] {claude_md} not found — skipping")
         return
 
     content = claude_md.read_text()
-    auto_block = f"{START_MARKER}\n{generate_auto_section(proj_dir)}\n{END_MARKER}"
+    auto_block = f"{START_MARKER}\n{generate_auto_section(proj_dir, py_files)}\n{END_MARKER}"
 
     if START_MARKER in content and END_MARKER in content:
         s = content.index(START_MARKER)
@@ -166,22 +174,9 @@ def update_claude_md(proj_dir: Path) -> None:
     print(f"[update_claude_md] Updated {claude_md}")
 
 
-# ── Project lookup ────────────────────────────────────────────────────────────
-
-def get_project(filepath: Path) -> Path | None:
-    for proj_dir in PROJECTS:
-        try:
-            filepath.relative_to(proj_dir)
-            return proj_dir
-        except ValueError:
-            continue
-    return None
-
-
 # ── Entry point ───────────────────────────────────────────────────────────────
 
 def main() -> None:
-    # Resolve file path: CLI arg > CLAUDE_TOOL_INPUT env var
     file_path: str = ""
 
     if len(sys.argv) > 1:
@@ -201,15 +196,20 @@ def main() -> None:
 
     filepath = Path(file_path).resolve()
 
-    # Skip non-Python files and CLAUDE.md itself
     if filepath.suffix != ".py":
         return
 
-    proj_dir = get_project(filepath)
-    if proj_dir is None:
-        return  # file not in a tracked project
+    projects = find_projects()
 
-    update_claude_md(proj_dir)
+    for proj_dir, py_files in projects.items():
+        try:
+            filepath.relative_to(proj_dir)
+            update_claude_md(proj_dir, py_files)
+            return
+        except ValueError:
+            continue
+
+    print(f"[update_claude_md] {filepath} not in any tracked project — skipping")
 
 
 if __name__ == "__main__":

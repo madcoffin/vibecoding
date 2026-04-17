@@ -57,3 +57,48 @@ Everything lives in `app.py` as a single file with four logical sections:
 ## Model file
 
 `mnist_cnn.pt` — saved PyTorch `state_dict`. Delete it to trigger re-training on next launch. The MNIST raw data in `data/` is reused automatically.
+
+<!-- AUTO-GENERATED START -->
+_Last auto-updated: 2026-04-17 16:41:51_
+
+## `app.py` — Code Structure
+
+### Dependencies
+- `os`
+- `tkinter`
+- `tkinter (ttk, font)`
+- `threading`
+- `numpy`
+- `PIL (Image, ImageDraw, ImageOps)`
+- `torch`
+- `torch.nn`
+- `torch.optim`
+- `torch.utils.data (DataLoader)`
+- `torchvision (datasets, transforms)`
+
+### Constants
+- `MODEL_PATH` = `os.path.join(os.path.dirname(__file__), 'mnist_cnn.pt')`
+- `CANVAS_SIZE` = `280`
+- `IMG_SIZE` = `28`
+- `BRUSH_WIDTH` = `18`
+- `DEVICE` = `torch.device('mps' if torch.backends.mps.is_available() e...`
+
+### Classes
+- **`DigitCNN`**(nn.Module)
+  - `forward()`
+- **`App`**(tk.Tk)
+  - `_build_ui()`
+  - `_initialize_model()`
+  - `_set_status()`
+  - `_on_click()`
+  - `_on_paint()`
+  - `_on_release()`
+  - `_clear()`
+  - `_predict()`
+
+### Functions
+- `train_model(status_callback)`
+- `load_model()`
+- `preprocess_canvas(pil_image)`
+
+<!-- AUTO-GENERATED END -->

@@ -93,3 +93,49 @@ ORDER BY c.idx;  -- CSV 원본 순서 유지
 - 흰 배경(`#ffffff`), 검정 텍스트(`#111111`) 고대비 미니멀 스타일
 - 1px 라인(`#e0e0e0`)으로 섹션 구분, 색상 카드 없음
 - The Minimalists (theminimalists.com) 톤앤매너 참고
+
+<!-- AUTO-GENERATED START -->
+_Last auto-updated: 2026-04-17 16:41:47_
+
+## `query_generator.py` — Code Structure
+
+### Dependencies
+- `tkinter`
+- `tkinter (filedialog, messagebox, scrolledtext, ttk)`
+- `csv`
+- `os`
+
+### Constants
+- `BG` = `'#ffffff'`
+- `TEXT` = `'#111111'`
+- `MUTED` = `'#888888'`
+- `BORDER` = `'#e0e0e0'`
+- `SQL_BG` = `'#f4f4f4'`
+- `F_BODY` = `('Helvetica Neue', 11)`
+- `F_SM` = `('Helvetica Neue', 9)`
+- `F_XS` = `('Helvetica Neue', 8)`
+- `F_BOLD` = `('Helvetica Neue', 10, 'bold')`
+- `F_TITLE` = `('Helvetica Neue', 20, 'bold')`
+- `F_SUB` = `('Helvetica Neue', 10)`
+- `F_NUM` = `('Helvetica Neue', 24, 'bold')`
+- `F_MON` = `('Menlo', 10)`
+- `PAD` = `40`
+
+### Classes
+- **`FlatBtn`**(tk.Label)
+  - `flash()`
+- **`App`**(tk.Tk)
+  - `_style_tree()`
+  - `_build_ui()`
+  - `_open_file()`
+  - `_copy_query()`
+  - `_save_file()`
+
+### Functions
+- `parse_csv(filepath)`
+- `sql_str(s)`
+- `build_query(pairs)`
+- `load_author_photo(size)`
+- `divider(parent)`
+
+<!-- AUTO-GENERATED END -->

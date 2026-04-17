@@ -54,3 +54,41 @@ The web backend reads `../desktop_version/mnist_cnn.pt` at startup. If you want 
 ## Key design constraint
 
 The preprocessing pipeline (colour inversion + normalisation constants) **must match** what was used during training (`desktop_version/app.py :: preprocess_canvas()`). Deviating from this is the most common source of poor web predictions.
+
+<!-- AUTO-GENERATED START -->
+_Last auto-updated: 2026-04-17 16:41:51_
+
+## `server.py` — Code Structure
+
+### Dependencies
+- `base64`
+- `io`
+- `os`
+- `pathlib (Path)`
+- `numpy`
+- `torch`
+- `torch.nn`
+- `fastapi (FastAPI)`
+- `fastapi.responses (HTMLResponse)`
+- `fastapi.staticfiles (StaticFiles)`
+- `PIL (Image, ImageOps)`
+- `pydantic (BaseModel)`
+
+### Constants
+- `BASE_DIR` = `Path(__file__).parent`
+- `MODEL_PATH` = `BASE_DIR.parent / 'desktop_version' / 'mnist_cnn.pt'`
+- `STATIC_DIR` = `BASE_DIR / 'static'`
+- `DEVICE` = `torch.device('mps' if torch.backends.mps.is_available() e...`
+
+### Classes
+- **`DigitCNN`**(nn.Module)
+  - `forward()`
+- **`PredictRequest`**(BaseModel)
+- **`Top3Item`**(BaseModel)
+- **`PredictResponse`**(BaseModel)
+
+### Functions
+- `preprocess(data_url)`
+- `predict(req)`
+
+<!-- AUTO-GENERATED END -->
