@@ -1,0 +1,98 @@
+<!-- Created: 2026-04-21 16:51:25 -->
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TodoMate</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="app-layout">
+
+      <!-- 사이드바 -->
+      <aside class="sidebar">
+        <div class="sidebar-brand">
+          <div class="brand-icon">✓</div>
+          <h1 class="app-title">TodoMate</h1>
+          <p class="app-tagline">오늘도 할 일을 정복하세요</p>
+        </div>
+
+        <div class="sidebar-progress">
+          <svg class="progress-ring" viewBox="0 0 80 80"
+               role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"
+               aria-label="진행률">
+            <circle class="ring-track" cx="40" cy="40" r="32"/>
+            <circle class="ring-fill" id="progress-ring-fill" cx="40" cy="40" r="32"/>
+          </svg>
+          <div class="progress-ring-center">
+            <span id="progress-percent" class="progress-percent-text">0%</span>
+          </div>
+          <p id="progress-label" class="progress-label" aria-live="polite">0 / 0 완료</p>
+        </div>
+
+        <nav class="filter-nav" aria-label="카테고리 필터">
+          <button class="nav-item active" data-filter="all">
+            <span class="nav-icon">📋</span>
+            <span class="nav-label">전체</span>
+            <span class="nav-count tab-count" aria-label="전체 개수">0</span>
+          </button>
+          <button class="nav-item" data-filter="work">
+            <span class="nav-icon">💼</span>
+            <span class="nav-label">업무</span>
+            <span class="nav-count tab-count" aria-label="업무 개수">0</span>
+          </button>
+          <button class="nav-item" data-filter="personal">
+            <span class="nav-icon">🌿</span>
+            <span class="nav-label">개인</span>
+            <span class="nav-count tab-count" aria-label="개인 개수">0</span>
+          </button>
+          <button class="nav-item" data-filter="study">
+            <span class="nav-icon">📚</span>
+            <span class="nav-label">공부</span>
+            <span class="nav-count tab-count" aria-label="공부 개수">0</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-actions">
+          <button id="clear-completed-btn" class="sidebar-btn danger" hidden aria-label="완료된 항목 모두 삭제">
+            완료된 항목 삭제
+          </button>
+          <button id="reset-btn" class="sidebar-btn reset" aria-label="앱 초기화">
+            앱 초기화
+          </button>
+        </div>
+      </aside>
+
+      <!-- 메인 콘텐츠 -->
+      <main class="main-content">
+        <div class="main-header">
+          <h2 id="current-filter-title" class="current-filter-title">전체 할 일</h2>
+          <div class="input-section">
+            <input
+              type="text"
+              id="todo-input"
+              class="todo-input"
+              placeholder="새로운 할 일을 입력하세요..."
+              maxlength="100"
+              aria-label="할 일 입력"
+            />
+            <select id="category-select" class="category-select" aria-label="카테고리 선택">
+              <option value="personal">개인</option>
+              <option value="work">업무</option>
+              <option value="study">공부</option>
+            </select>
+            <button id="add-btn" class="add-btn" aria-label="할 일 추가">추가</button>
+          </div>
+          <p id="auto-hint" class="auto-hint" aria-live="polite"></p>
+        </div>
+
+        <div class="todo-container">
+          <ul id="todo-list" class="todo-list" aria-label="할 일 목록"></ul>
+        </div>
+      </main>
+
+    </div>
+    <script src="app.js"></script>
+  </body>
+</html>

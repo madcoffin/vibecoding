@@ -92,6 +92,7 @@ body {
 /* ── 입력 영역 ── */
 .input-section {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -404,6 +405,29 @@ body {
   outline: 2px solid #3b82f6;
   outline-offset: 2px;
 }
+
+/* ── 자동 분류 힌트 ── */
+.auto-hint {
+  flex: 1 1 100%;
+  font-size: 0.75rem;
+  font-weight: 500;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.2s ease, opacity 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.auto-hint.visible {
+  max-height: 2em;
+  opacity: 1;
+}
+
+.auto-hint.cat-work    { color: var(--color-work); }
+.auto-hint.cat-personal { color: var(--color-personal); }
+.auto-hint.cat-study   { color: var(--color-study); }
 
 /* ── 흔들기 애니메이션 ── */
 @keyframes shake {

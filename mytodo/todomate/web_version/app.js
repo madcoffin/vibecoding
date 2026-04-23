@@ -1,6 +1,7 @@
-// Created: 2026-04-17 16:35:53
+// Created: 2026-04-21 16:52:50
 const STORAGE_KEY = "todomate.todos";
 const CATEGORY_LABEL = { work: "업무", personal: "개인", study: "공부" };
+const FILTER_TITLE = { all: "전체 할 일", work: "업무 할 일", personal: "개인 할 일", study: "공부 할 일" };
 const EMPTY_MESSAGE = {
   all: "아직 할 일이 없어요. 위에서 추가해보세요 ✨",
   work: "업무 할 일이 없어요 ✨",
@@ -8,7 +9,8 @@ const EMPTY_MESSAGE = {
   study: "공부 할 일이 없어요 ✨",
 };
 
-// 카테고리 자동 분류 키워드 (personal은 기본값)
+const RING_CIRCUMFERENCE = 201; // 2 * π * 32
+
 const CATEGORY_KEYWORDS = {
   work: [
     "회의", "미팅", "보고서", "보고", "발표", "프로젝트", "업무", "출근", "퇴근",
@@ -104,7 +106,6 @@ function getProgress(filter) {
   return { total, completed, percent };
 }
 
-// 텍스트에서 카테고리를 추론, 매칭 없으면 null 반환
 function inferCategory(text) {
   const lower = text.toLowerCase();
   for (const [category, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
@@ -129,14 +130,13 @@ function resetApp() {
   state.editingId = null;
   state.currentFilter = "all";
   localStorage.removeItem(STORAGE_KEY);
-  document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
-  document.querySelector('.tab[data-filter="all"]').classList.add("active");
+  document.querySelectorAll(".nav-item").forEach((t) => t.classList.remove("active"));
+  document.querySelector('.nav-item[data-filter="all"]').classList.add("active");
   render();
 }
 
 // ── 렌더링 ──
 
-// XSS 방지: innerHTML에 삽입되는 모든 사용자 입력에 적용
 function escapeHtml(str) {
   return str
     .replace(/&/g, "&amp;")
@@ -151,7 +151,7 @@ function todoItemHtml(t) {
 
   if (state.editingId === t.id) {
     return `
-      <li data-id="${t.id}" class="todo-item editing${t.completed ? " completed" : ""}">
+      <li data-id="${t.id}" data-category="${t.category}" class="todo-item editing${t.completed ? " completed" : ""}">
         <input type="checkbox" class="todo-check" ${t.completed ? "checked" : ""} aria-label="${checkLabel}">
         <input type="text" class="edit-input" value="${safeText}" maxlength="100" aria-label="할 일 수정">
         <select class="edit-select" aria-label="카테고리 선택">
@@ -164,7 +164,7 @@ function todoItemHtml(t) {
   }
 
   return `
-    <li data-id="${t.id}" class="todo-item${t.completed ? " completed" : ""}">
+    <li data-id="${t.id}" data-category="${t.category}" class="todo-item${t.completed ? " completed" : ""}">
       <input type="checkbox" class="todo-check" ${t.completed ? "checked" : ""} aria-label="${checkLabel}">
       <span class="todo-text">${safeText}</span>
       <span class="todo-category cat-${t.category}">${CATEGORY_LABEL[t.category]}</span>
@@ -189,23 +189,27 @@ function renderProgress() {
   const { total, completed, percent } = getProgress(state.currentFilter);
   const isComplete = total > 0 && percent === 100;
 
-  document.querySelector(".progress-text").textContent =
-    `${completed} / ${total} 완료 · ${percent}%${isComplete ? " 🎉" : ""}`;
+  document.getElementById("progress-percent").textContent = `${percent}%`;
+  document.getElementById("progress-label").textContent =
+    `${completed} / ${total} 완료${isComplete ? " 🎉" : ""}`;
 
-  const fill = document.querySelector(".progress-bar-fill");
-  fill.style.width = `${percent}%`;
-  fill.classList.toggle("complete", isComplete);
+  const ringFill = document.getElementById("progress-ring-fill");
+  ringFill.style.strokeDashoffset = RING_CIRCUMFERENCE * (1 - percent / 100);
+  ringFill.classList.toggle("complete", isComplete);
 
-  // 접근성: progressbar aria 값 갱신
-  const track = document.querySelector(".progress-bar-track");
-  track.setAttribute("aria-valuenow", percent);
+  const ring = document.querySelector(".progress-ring");
+  ring.setAttribute("aria-valuenow", percent);
 }
 
 function renderFilterCounts() {
   ["all", "work", "personal", "study"].forEach((f) => {
-    const tab = document.querySelector(`.tab[data-filter="${f}"]`);
-    if (tab) tab.querySelector(".tab-count").textContent = getTodos(f).length;
+    const item = document.querySelector(`.nav-item[data-filter="${f}"]`);
+    if (item) item.querySelector(".tab-count").textContent = getTodos(f).length;
   });
+}
+
+function renderFilterTitle() {
+  document.getElementById("current-filter-title").textContent = FILTER_TITLE[state.currentFilter];
 }
 
 function renderFooter() {
@@ -216,6 +220,7 @@ function renderFooter() {
 function render() {
   renderProgress();
   renderFilterCounts();
+  renderFilterTitle();
   renderTodos();
   renderFooter();
 }
@@ -238,7 +243,6 @@ function commitEdit() {
   const editInput = document.querySelector(".edit-input");
   const editSelect = document.querySelector(".edit-select");
 
-  // DOM에서 이미 사라진 경우 (삭제 직후 등) 조용히 종료
   if (!editInput) {
     state.editingId = null;
     return;
@@ -246,7 +250,6 @@ function commitEdit() {
 
   const newText = editInput.value.trim().slice(0, 100);
   if (!newText) {
-    // 빈 내용 → 원래 값 유지하고 편집 취소
     state.editingId = null;
     render();
     return;
@@ -272,7 +275,6 @@ function bindEvents() {
   const select = document.getElementById("category-select");
   const addBtn = document.getElementById("add-btn");
   const list = document.getElementById("todo-list");
-
   const hint = document.getElementById("auto-hint");
 
   function showAutoHint(category) {
@@ -284,7 +286,6 @@ function bindEvents() {
     hint.className = "auto-hint";
   }
 
-  // 입력 중 키워드 감지 → 카테고리 자동 선택
   input.addEventListener("input", () => {
     const inferred = inferCategory(input.value);
     if (inferred) {
@@ -316,7 +317,6 @@ function bindEvents() {
     if (e.key === "Enter") handleAdd();
   });
 
-  // 클릭 위임: 체크박스 / 수정 버튼 / 삭제 버튼
   list.addEventListener("click", (e) => {
     const li = e.target.closest(".todo-item");
     if (!li) return;
@@ -335,14 +335,12 @@ function bindEvents() {
     }
   });
 
-  // 더블클릭: 텍스트 영역 → 편집 시작
   list.addEventListener("dblclick", (e) => {
     if (!e.target.classList.contains("todo-text")) return;
     const li = e.target.closest(".todo-item");
     if (li) startEdit(li.dataset.id);
   });
 
-  // 편집 입력창 키보드 (Enter 저장 / ESC 취소)
   list.addEventListener("keydown", (e) => {
     if (!e.target.classList.contains("edit-input")) return;
     if (e.key === "Enter") {
@@ -353,28 +351,23 @@ function bindEvents() {
     }
   });
 
-  // 편집 입력창 포커스 이탈 → 저장
-  // focusout은 버블링되므로 list에 위임 가능
   list.addEventListener("focusout", (e) => {
     if (!e.target.classList.contains("edit-input")) return;
-    // edit-select로 포커스가 이동하는 경우 → 아직 편집 중, 저장 보류
     const goingToSelect =
       e.relatedTarget && e.relatedTarget.classList.contains("edit-select");
     if (!goingToSelect) commitEdit();
   });
 
-  // 필터 탭
-  document.querySelector(".filter-tabs").addEventListener("click", (e) => {
-    const tab = e.target.closest(".tab");
-    if (!tab) return;
+  document.querySelector(".filter-nav").addEventListener("click", (e) => {
+    const item = e.target.closest(".nav-item");
+    if (!item) return;
     commitEdit();
-    state.currentFilter = tab.dataset.filter;
-    document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
-    tab.classList.add("active");
+    state.currentFilter = item.dataset.filter;
+    document.querySelectorAll(".nav-item").forEach((t) => t.classList.remove("active"));
+    item.classList.add("active");
     render();
   });
 
-  // 푸터 버튼
   document.getElementById("clear-completed-btn").addEventListener("click", clearCompleted);
   document.getElementById("reset-btn").addEventListener("click", resetApp);
 }
@@ -386,5 +379,5 @@ state.todos = loadTodos();
 document.addEventListener("DOMContentLoaded", () => {
   bindEvents();
   render();
-  console.log("TodoMate loaded");
+  console.log("TodoMate (web_version) loaded");
 });
