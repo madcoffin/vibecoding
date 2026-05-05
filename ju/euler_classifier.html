@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>자연상수 e 소수부분 숫자 분류기</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Courier New', monospace;
+    background: #0a0a1a;
+    color: #e0e0ff;
+    min-height: 100vh;
+    padding: 20px;
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 1.6rem;
+    color: #88aaff;
+    margin-bottom: 4px;
+    letter-spacing: 2px;
+  }
+
+  .subtitle {
+    text-align: center;
+    font-size: 0.85rem;
+    color: #556;
+    margin-bottom: 24px;
+  }
+
+  /* ─── 컨트롤 ─── */
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+
+  .controls label { font-size: 0.85rem; color: #aab; align-self: center; }
+
+  .controls input[type=range] {
+    width: 180px;
+    accent-color: #88aaff;
+    cursor: pointer;
+  }
+
+  #digitCount {
+    color: #88aaff;
+    font-weight: bold;
+    min-width: 50px;
+    display: inline-block;
+  }
+
+  .filter-btns {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .filter-btn {
+    border: none;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    font-family: 'Courier New', monospace;
+    cursor: pointer;
+    transition: transform 0.1s, opacity 0.2s;
+    font-weight: bold;
+  }
+
+  .filter-btn:hover { transform: scale(1.1); }
+  .filter-btn.inactive { opacity: 0.3; }
+
+  .btn-all {
+    background: #334;
+    color: #ccd;
+    border: 1px solid #556;
+    border-radius: 6px;
+    padding: 4px 14px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+  }
+  .btn-all:hover { background: #445; }
+
+  /* ─── 통계 바 ─── */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 6px;
+    margin-bottom: 20px;
+  }
+
+  .stat-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+  .stat-col:hover { transform: scale(1.05); }
+
+  .bar-wrap {
+    width: 100%;
+    height: 80px;
+    background: #111;
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid #222;
+  }
+
+  .bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    border-radius: 4px 4px 0 0;
+    transition: height 0.5s ease;
+  }
+
+  .stat-digit {
+    font-size: 1rem;
+    font-weight: bold;
+  }
+
+  .stat-count {
+    font-size: 0.7rem;
+    color: #889;
+  }
+
+  .stat-pct {
+    font-size: 0.65rem;
+    color: #667;
+  }
+
+  /* ─── e 디스플레이 ─── */
+  .e-display {
+    background: #0d0d20;
+    border: 1px solid #223;
+    border-radius: 10px;
+    padding: 16px;
+    max-height: 320px;
+    overflow-y: auto;
+    line-height: 1.9;
+    font-size: 1.05rem;
+    letter-spacing: 1px;
+    word-break: break-all;
+    scrollbar-width: thin;
+    scrollbar-color: #334 #0d0d20;
+  }
+
+  .e-display::-webkit-scrollbar { width: 6px; }
+  .e-display::-webkit-scrollbar-track { background: #0d0d20; }
+  .e-display::-webkit-scrollbar-thumb { background: #334; border-radius: 3px; }
+
+  .prefix {
+    color: #778;
+    margin-right: 2px;
+  }
+
+  .dot { color: #aac; }
+
+  .d {
+    display: inline-block;
+    width: 1.1em;
+    text-align: center;
+    border-radius: 3px;
+    transition: background 0.2s, opacity 0.2s;
+  }
+
+  .d.dim { opacity: 0.12; }
+
+  /* ─── 색상 팔레트 ─── */
+  :root {
+    --c0: #ff6b6b; --c1: #ffa94d; --c2: #ffe066;
+    --c3: #69db7c; --c4: #38d9a9; --c5: #74c0fc;
+    --c6: #a5d8ff; --c7: #cc5de8; --c8: #f783ac;
+    --c9: #b8c8ff;
+  }
+
+  .n0 { color: var(--c0); } .bar-0 { background: var(--c0); }
+  .n1 { color: var(--c1); } .bar-1 { background: var(--c1); }
+  .n2 { color: var(--c2); } .bar-2 { background: var(--c2); }
+  .n3 { color: var(--c3); } .bar-3 { background: var(--c3); }
+  .n4 { color: var(--c4); } .bar-4 { background: var(--c4); }
+  .n5 { color: var(--c5); } .bar-5 { background: var(--c5); }
+  .n6 { color: var(--c6); } .bar-6 { background: var(--c6); }
+  .n7 { color: var(--c7); } .bar-7 { background: var(--c7); }
+  .n8 { color: var(--c8); } .bar-8 { background: var(--c8); }
+  .n9 { color: var(--c9); } .bar-9 { background: var(--c9); }
+
+  .btn-0 { background: var(--c0); color: #000; }
+  .btn-1 { background: var(--c1); color: #000; }
+  .btn-2 { background: var(--c2); color: #000; }
+  .btn-3 { background: var(--c3); color: #000; }
+  .btn-4 { background: var(--c4); color: #000; }
+  .btn-5 { background: var(--c5); color: #000; }
+  .btn-6 { background: var(--c6); color: #000; }
+  .btn-7 { background: var(--c7); color: #000; }
+  .btn-8 { background: var(--c8); color: #000; }
+  .btn-9 { background: var(--c9); color: #000; }
+
+  .info-bar {
+    text-align: center;
+    font-size: 0.78rem;
+    color: #445;
+    margin-top: 12px;
+  }
+
+  @media (max-width: 600px) {
+    .stats { grid-template-columns: repeat(5, 1fr); }
+    .bar-wrap { height: 60px; }
+    h1 { font-size: 1.2rem; }
+  }
+</style>
+</head>
+<body>
+
+<h1>자연상수 e 소수부분 숫자 분류기</h1>
+<p class="subtitle">e = 2.71828182845904523536… — 소수 자리 숫자를 0~9로 분류합니다</p>
+
+<!-- 컨트롤 -->
+<div class="controls">
+  <label>소수 자릿수: <span id="digitCount">500</span></label>
+  <input type="range" id="slider" min="50" max="1000" step="50" value="500">
+  <span style="color:#556;font-size:0.8rem">|</span>
+  <label>숫자 필터:</label>
+  <div class="filter-btns" id="filterBtns"></div>
+  <button class="btn-all" id="btnAll">전체</button>
+</div>
+
+<!-- 통계 바 차트 -->
+<div class="stats" id="stats"></div>
+
+<!-- e 숫자 표시 -->
+<div class="e-display" id="eDisplay"></div>
+
+<p class="info-bar" id="infoBar"></p>
+
+<script>
+// e 소수점 이하 1000자리
+const E_DECIMALS =
+  "7182818284590452353602874713526624977572470936999595749669676277" +
+  "2407663035354759457138217852516642742746639193200305992181741359" +
+  "6629043572900334295260595630738132328627943490763233829880753195" +
+  "2510190115738341879307021540891499348841675092447614606680822648" +
+  "0016847741185374234544243710753907774499206955170276183860626133" +
+  "1384583000752044933826560297606737113200709328709127443747047230" +
+  "6969772093101416928368190255151086574637721112523897844250569536" +
+  "9677078544996996794686445490598793163688923009879312773617821542" +
+  "4999229576351482208269895193668033182528869398496465105820939239" +
+  "8294887933203625094431173012381970684161403970198376793206832823" +
+  "7646480429531180232878250981945581530175671736133206981125099618" +
+  "1881593041690351598888519345807273866738589422827926001651208051" +
+  "7462829800736356736839369757632936733093978741614551536765295985" +
+  "6290779346044774547808541249066616878244572847507906006564239945" +
+  "7053534286082946358843103745622547622274851024042699757547427944" +
+  "9323564684702298938985954993437599668";
+
+const DIGIT_COUNT_MAX = 1000;
+const decimals = E_DECIMALS.slice(0, DIGIT_COUNT_MAX);
+
+let activeDigits = new Set([0,1,2,3,4,5,6,7,8,9]);
+let currentN = 500;
+
+function getCount(n) {
+  const counts = new Array(10).fill(0);
+  for (let i = 0; i < n; i++) counts[+decimals[i]]++;
+  return counts;
+}
+
+// ─── 통계 바 생성 ───
+function buildStats() {
+  const container = document.getElementById('stats');
+  container.innerHTML = '';
+  for (let d = 0; d <= 9; d++) {
+    const col = document.createElement('div');
+    col.className = 'stat-col';
+    col.dataset.d = d;
+    col.innerHTML = `
+      <div class="bar-wrap">
+        <div class="bar bar-${d}" id="bar-${d}" style="height:0%"></div>
+      </div>
+      <span class="stat-digit n${d}">${d}</span>
+      <span class="stat-count" id="cnt-${d}">0</span>
+      <span class="stat-pct" id="pct-${d}">0%</span>
+    `;
+    col.addEventListener('click', () => toggleDigit(d));
+    container.appendChild(col);
+  }
+}
+
+// ─── 필터 버튼 생성 ───
+function buildFilterBtns() {
+  const wrap = document.getElementById('filterBtns');
+  wrap.innerHTML = '';
+  for (let d = 0; d <= 9; d++) {
+    const btn = document.createElement('button');
+    btn.className = `filter-btn btn-${d}`;
+    btn.textContent = d;
+    btn.dataset.d = d;
+    btn.addEventListener('click', () => toggleDigit(d));
+    wrap.appendChild(btn);
+  }
+}
+
+function toggleDigit(d) {
+  if (activeDigits.has(d)) {
+    if (activeDigits.size === 1) return; // 최소 1개 유지
+    activeDigits.delete(d);
+  } else {
+    activeDigits.add(d);
+  }
+  render();
+}
+
+document.getElementById('btnAll').addEventListener('click', () => {
+  activeDigits = new Set([0,1,2,3,4,5,6,7,8,9]);
+  render();
+});
+
+// ─── 메인 렌더 ───
+function render() {
+  const n = currentN;
+  const counts = getCount(n);
+  const maxCount = Math.max(...counts);
+
+  // 통계 업데이트
+  for (let d = 0; d <= 9; d++) {
+    const c = counts[d];
+    const pct = (c / n * 100).toFixed(1);
+    const barH = maxCount > 0 ? (c / maxCount * 100).toFixed(1) : 0;
+    document.getElementById(`bar-${d}`).style.height = barH + '%';
+    document.getElementById(`cnt-${d}`).textContent = c;
+    document.getElementById(`pct-${d}`).textContent = pct + '%';
+
+    // 통계 열 dim
+    const col = document.querySelector(`.stat-col[data-d="${d}"]`);
+    if (activeDigits.has(d)) col.style.opacity = '1';
+    else col.style.opacity = '0.3';
+  }
+
+  // 필터 버튼 상태
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    const d = +btn.dataset.d;
+    if (activeDigits.has(d)) btn.classList.remove('inactive');
+    else btn.classList.add('inactive');
+  });
+
+  // e 숫자 표시
+  const display = document.getElementById('eDisplay');
+  let html = `<span class="prefix">e = 2.</span>`;
+  for (let i = 0; i < n; i++) {
+    const d = +decimals[i];
+    const dim = activeDigits.has(d) ? '' : ' dim';
+    html += `<span class="d n${d}${dim}">${d}</span>`;
+  }
+  display.innerHTML = html;
+
+  // 정보 바
+  const activeList = [...activeDigits].sort().join(', ');
+  const activeCount = [...activeDigits].reduce((s, d) => s + counts[d], 0);
+  document.getElementById('infoBar').textContent =
+    `소수 ${n}자리 | 강조: [${activeList}] → ${activeCount}개 (${(activeCount/n*100).toFixed(1)}%)`;
+}
+
+// ─── 슬라이더 ───
+const slider = document.getElementById('slider');
+const digitCountEl = document.getElementById('digitCount');
+slider.addEventListener('input', () => {
+  currentN = +slider.value;
+  digitCountEl.textContent = currentN;
+  render();
+});
+
+// ─── 초기화 ───
+buildStats();
+buildFilterBtns();
+render();
+</script>
+</body>
+</html>
